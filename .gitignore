@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Configurações e Segredos
+.env
+*.env
+
+# Logs
+*.log
+logs/
+
+# Alembic
+migrations/versions/*.pyc
+
+# IDEs
+.vscode/
+.idea/
