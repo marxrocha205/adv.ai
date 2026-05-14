@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.core.logger import setup_logging, logger
+from app.api.v1 import webhooks
 
 # Inicializa o sistema de logs antes de qualquer outro componente
 setup_logging()
@@ -30,7 +31,7 @@ def create_app() -> FastAPI:
         """
         logger.debug("Health check acionado.")
         return {"status": "ok", "message": "Adv.AI is running"}
-
+    app.include_router(webhooks.router, prefix="/api/v1/whatsapp")
     # TODO: app.include_router(webhooks.router, prefix="/api/v1/whatsapp")
 
     return app
