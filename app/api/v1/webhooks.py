@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Request, BackgroundTasks, status
 from fastapi.responses import JSONResponse
 from app.infrastructure.whatsapp.evolution_adapter import EvolutionWebhookAdapter
+from app.infrastructure.whatsapp.evolution_client import EvolutionClient
 from app.core.logger import logger
 
 router = APIRouter()
+evo_client = EvolutionClient()
 
 # Utilizando BackgroundTasks para não travar a resposta HTTP
 async def process_incoming_message(standard_msg):
@@ -13,6 +15,8 @@ async def process_incoming_message(standard_msg):
     """
     logger.info(f"Processando nova mensagem de {standard_msg.wa_id}: {standard_msg.text}")
     # TODO: Passar a mensagem para a Camada de Serviço (CRM e IA)
+    resposta_teste = f"🤖 Recebi sua mensagem: '{standard_msg.text}'. (Isso é um teste do sistema Adv.AI)"
+    await evo_client.send_text_message(number=standard_msg.wa_id, text=resposta_teste)
 
 @router.post("/evolution", tags=["Webhooks"])
 async def evolution_webhook(request: Request, background_tasks: BackgroundTasks):
