@@ -1,31 +1,142 @@
 version: '3.8'
 
 services:
+
+  # =========================================================
+  # API PRINCIPAL
+  # =========================================================
   api:
     build: .
     container_name: adv_ai_api
+
     ports:
       - "8000:8000"
+
     env_file:
       - .env
+
     volumes:
-      - .:/app # Permite hot-reload ao editar o código localmente
+      - .:/app
+
     depends_on:
       - db
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - evolution
 
-  # Banco de dados local espelhando a Railway (Postgres com pgvector)
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+
+    restart: always
+
+  # =========================================================
+  # POSTGRES + PGVECTOR
+  # =========================================================
   db:
     image: ankane/pgvector:latest
     container_name: adv_ai_db
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: suasenha
       POSTGRES_DB: adv_ai
+
     ports:
       - "5432:5432"
+
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+    restart: always
+
+  # =========================================================
+  # EVOLUTION API
+  # =========================================================
+  evolution:
+    image: evoapicloud/evolution-api:latest
+    container_name: evolution_api
+
+    depends_on:
+      - db
+
+    ports:
+      - "8080:8080"
+
+    restart: always
+
+    environment:
+
+      # =====================================================
+      # SERVIDOR
+      # =====================================================
+      SERVER_TYPE: http
+      SERVER_PORT: 8080
+
+      # LOCAL
+      SERVER_URL: http://localhost:8080
+
+      # EXEMPLO VPS
+      # SERVER_URL: http://SEU_IP:8080
+
+      AUTHENTICATION_API_KEY: 12345
+
+      # =====================================================
+      # DATABASE
+      # =====================================================
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+
+      DATABASE_CONNECTION_URI: postgresql://postgres:suasenha@db:5432/adv_ai
+
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+
+      # =====================================================
+      # STORE
+      # =====================================================
+      STORE_MESSAGES: "true"
+      STORE_MESSAGE_UP: "true"
+      STORE_CONTACTS: "true"
+      STORE_CHATS: "true"
+
+      # =====================================================
+      # CACHE
+      # =====================================================
+      CACHE_REDIS_ENABLED: "false"
+
+      # =====================================================
+      # QRCODE
+      # =====================================================
+      QRCODE_LIMIT: 30
+
+      # =====================================================
+      # WHATSAPP WEB
+      # =====================================================
+      CONFIG_SESSION_PHONE_CLIENT: Chrome
+      CONFIG_SESSION_PHONE_NAME: Chrome
+
+      # FIX QR CODE
+      WEB_VERSION: 2.3000.1032750324
+      CONFIG_SESSION_PHONE_VERSION: 2.3000.1032750324
+
+      # =====================================================
+      # LOGS
+      # =====================================================
+      LOG_LEVEL: ERROR,WARN,DEBUG,INFO,LOG,VERBOSE,DARK,WEBHOOKS
+
+      # =====================================================
+      # META / WEBHOOK
+      # =====================================================
+      WA_BUSINESS_TOKEN_WEBHOOK: evolution
+      WA_BUSINESS_URL: https://graph.facebook.com
+      WA_BUSINESS_VERSION: v20.0
+
+    volumes:
+      - evolution_data_v2:/evolution/instances
+
+# =========================================================
+# VOLUMES
+# =========================================================
 volumes:
   pgdata:
+  evolution_data_v2:
