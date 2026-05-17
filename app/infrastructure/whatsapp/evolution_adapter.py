@@ -2,16 +2,10 @@ from app.domain.schemas.message_schema import StandardWebhookMessage
 from app.core.logger import logger
 
 class EvolutionWebhookAdapter:
-    """
-    Adapter responsável por interpretar o Webhook da Evolution API
-    e converter para o nosso formato padrão.
-    """
     
     @staticmethod
     def parse_payload(payload: dict) -> StandardWebhookMessage | None:
         try:
-            # A Evolution manda vários eventos. Só nos interessam as mensagens recebidas/enviadas.
-            # O evento principal geralmente é "messages.upsert"
             event = payload.get("event")
             if event != "messages.upsert":
                 return None
@@ -20,32 +14,60 @@ class EvolutionWebhookAdapter:
             message_data = data.get("message", {})
             key = data.get("key", {})
             
-            # Pega o número de quem enviou (removendo o sufixo @s.whatsapp.net)
             remote_jid = key.get("remoteJid", "")
             wa_id = remote_jid.split("@")[0] if "@" in remote_jid else remote_jid
             
-            # Se for status, grupo ou não tiver texto claro, ignoramos por enquanto
             if "status" in remote_jid or "g.us" in remote_jid:
                 return None
-                
-            # Extrai o texto (a Evolution pode mandar o texto em diferentes chaves dependendo do tipo da mensagem)
-            # Aqui estamos focando em texto puro ou respostas (extended text)
-            text = (
-                message_data.get("conversation") or 
-                message_data.get("extendedTextMessage", {}).get("text") or 
-                ""
-            )
-            
-            if not text:
+
+            # 1. Identificando o Tipo de Mensagem
+            msg_type = "text"
+            text_content = ""
+            mime_type = None
+            media_data = None
+            message_id = key.get("id")
+
+            # Se for texto normal
+            if "conversation" in message_data:
+                text_content = message_data["conversation"]
+            # Se for resposta a outra mensagem
+            elif "extendedTextMessage" in message_data:
+                text_content = message_data["extendedTextMessage"].get("text", "")
+            # Se for ÁUDIO
+            elif "audioMessage" in message_data:
+                msg_type = "audio"
+                mime_type = message_data["audioMessage"].get("mimetype")
+                media_data = message_data["audioMessage"]
+                text_content = "[Áudio Recebido]" # Placeholder até a IA processar
+            # Se for DOCUMENTO (PDF, Planilha)
+            elif "documentMessage" in message_data:
+                msg_type = "document"
+                mime_type = message_data["documentMessage"].get("mimetype")
+                media_data = message_data["documentMessage"]
+                text_content = f"[Documento Recebido: {media_data.get('title', 'arquivo')}]"
+            # Se for IMAGEM
+            elif "imageMessage" in message_data:
+                msg_type = "image"
+                mime_type = message_data["imageMessage"].get("mimetype")
+                media_data = message_data["imageMessage"]
+                text_content = "[Imagem Recebida]"
+
+            # Ignora se não conseguimos extrair nada útil
+            if not text_content and msg_type == "text":
                 return None
 
             return StandardWebhookMessage(
                 provider="evolution",
+                instance=payload.get("instance", "default"),
                 wa_id=wa_id,
                 contact_name=data.get("pushName", "Desconhecido"),
-                text=text,
+                text=text_content,
                 is_from_me=key.get("fromMe", False),
-                timestamp=data.get("messageTimestamp", 0)
+                timestamp=data.get("messageTimestamp", 0),
+                message_type=msg_type,
+                mime_type=mime_type,
+                media_data=media_data,
+                message_id=message_id
             )
             
         except Exception as e:
