@@ -3,6 +3,7 @@ from typing import Optional
 
 class StandardWebhookMessage(BaseModel):
     provider: str
+    instance: str
     wa_id: str
     contact_name: Optional[str]
     text: str

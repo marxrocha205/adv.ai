@@ -16,6 +16,8 @@ class Client(Base):
     # wa_id é o número do WhatsApp (ex: 5511999999999). Único e indexado para buscas rápidas.
     wa_id: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=True)
+    full_name: Mapped[str] = mapped_column(String(150), nullable=True)
+    cpf: Mapped[str] = mapped_column(String(14), nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="prospect") # prospect, active, inactive
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -55,7 +57,7 @@ class MemoryRAG(Base):
     
     # 1536 é a dimensão padrão dos embeddings da OpenAI (text-embedding-3-small/ada-002).
     # Se formos usar outro modelo, ajustaremos esse valor.
-    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False) 
+    embedding: Mapped[list[float]] = mapped_column(Vector(3072), nullable=False) 
     
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

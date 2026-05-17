@@ -122,7 +122,7 @@ services:
       # =====================================================
       # LOGS
       # =====================================================
-      LOG_LEVEL: ERROR,WARN,DEBUG,INFO,LOG,VERBOSE,DARK,WEBHOOKS
+      LOG_LEVEL: ERROR,WARN,DEBUG,INFO,LOG,WEBHOOKS
 
       # =====================================================
       # META / WEBHOOK

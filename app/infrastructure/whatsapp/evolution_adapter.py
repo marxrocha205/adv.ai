@@ -58,6 +58,7 @@ class EvolutionWebhookAdapter:
 
             return StandardWebhookMessage(
                 provider="evolution",
+                instance=payload.get("instance", "default"),
                 wa_id=wa_id,
                 contact_name=data.get("pushName", "Desconhecido"),
                 text=text_content,
